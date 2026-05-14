@@ -1,0 +1,67 @@
+image: mcr.microsoft.com/dotnet/sdk:9.0
+
+variables:
+  MAIN_BRANCH: "main"
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.latest.gitlab-ci.yml
+
+stages:
+  - restore
+  - build
+  - test
+  - sast
+  - dependency_scanning
+
+restore:
+  stage: restore
+  tags:
+    - windows
+  script:
+    - echo "Restoring solution..."
+    - dotnet restore ASPWebApi.slnx
+    - echo "Restoring test project separately..."
+    - dotnet restore WebApiTests/WebApiTests.csproj
+
+build:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Building solution..."
+    - dotnet build ASPWebApi.slnx
+
+test:
+  stage: test
+  tags:
+    - windows
+  script:
+    - echo "Running tests..."
+    - dotnet test WebApiTests/WebApiTests.csproj
+
+dependency_scanning:
+  stage: dependency_scanning
+  tags:
+    - windows
+
+sast:
+  stage: sast
+  tags:
+    - windows
+  image: returntocorp/semgrep:latest
+  script:
+    - echo "Running Semgrep SAST scan..."
+    - mkdir -p /src
+    - cp -r . /src
+    - cd /src
+    - semgrep scan --config auto --json > gl-sast-report.json
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    paths:
+      - gl-sast-report.json
+    when: always
+  allow_failure: true

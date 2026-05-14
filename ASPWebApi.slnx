@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="Domain/Domain.csproj" />
+    <Project Path="Services.Abstract/Services.Abstract.csproj" />
+    <Project Path="Services/Services.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Persistence/Persistence.csproj" />
+  </Folder>
+  <Folder Name="/UnitTests/">
+    <Project Path="WebApiTests/WebApiTests.csproj" Id="545c3f28-dc28-43a2-b0af-7389a44e4bea" />
+  </Folder>
+  <Project Path="ASPWebApi/ASPWebApi.csproj" />
+</Solution>

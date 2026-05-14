@@ -1,0 +1,9 @@
+﻿namespace ASPWebApi.Models
+{
+    public class AccountModel
+    {
+        public required string Email { get; set; }
+        public required string Password { get; set; }
+        public int Id { get; set; }
+    }
+}
