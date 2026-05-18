@@ -16,48 +16,48 @@ stages:
   - sast
   - dependency_scanning
 
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
+    - when: manual
+
 restore:
   stage: restore
   tags:
     - windows
   script:
-    - echo "Restoring solution..."
     - dotnet restore ASPWebApi.slnx
-    - echo "Restoring test project separately..."
-    - dotnet restore WebApiTests/WebApiTests.csproj
 
 build:
   stage: build
   tags:
     - windows
   script:
-    - echo "Building solution..."
-    - dotnet build ASPWebApi.slnx
+    - dotnet build ASPWebApi.slnx --no-restore
 
 test:
   stage: test
   tags:
     - windows
   script:
-    - echo "Running tests..."
-    - dotnet test WebApiTests/WebApiTests.csproj
+    - dotnet test WebApiTests/WebApiTests.csproj --no-build
 
 dependency_scanning:
   stage: dependency_scanning
   tags:
     - windows
+  script:
+    - dotnet list ASPWebApi.slnx package --vulnerable
 
-sast:
+custom_sast:
   stage: sast
   tags:
     - windows
   image: returntocorp/semgrep:latest
   script:
-    - echo "Running Semgrep SAST scan..."
-    - mkdir -p /src
-    - cp -r . /src
-    - cd /src
-    - semgrep scan --config auto --json > gl-sast-report.json
+    - semgrep scan --config auto --json --output gl-sast-report.json
   artifacts:
     reports:
       sast: gl-sast-report.json

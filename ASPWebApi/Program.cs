@@ -7,6 +7,7 @@ using Persistence;
 using Services;
 using Services.Abstract.Interfaces;
 using Services.AutoMaper;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,10 @@ builder.Services.AddDbContext<DatabaseContext>(options =>
 builder.Services.AddScoped<IServiceManager, ServiceManager>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// ДО builder.Build()
+builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(@"/path/to/persistent/storage"))
+          .ProtectKeysWithCertificate("thumbprint-of-your-certificate");
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = "Cookies";
@@ -58,6 +62,10 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = "YOUR_CLIENT_ID";
     options.ClientSecret = "YOUR_SECRET";
 });
+
+builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(@"/path/to/persistent/storage"))
+          .ProtectKeysWithCertificate("thumbprint-of-your-certificate");
 
 
 
