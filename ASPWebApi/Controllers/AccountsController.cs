@@ -1,11 +1,13 @@
 ﻿using ASPWebApi.Models;
 using AutoMapper;
-using System.Net.Http;
-using System.Text.Json;
-using System;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Services.Abstract.Dto;
 using Services.Abstract.Interfaces;
+using System;
+using System.Net.Http;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ASPWebApi.Controllers
 {
@@ -15,11 +17,13 @@ namespace ASPWebApi.Controllers
     {
         private readonly IServiceManager serviceManager;
         private readonly IMapper mapper;
+        private readonly ILogger<AccountsController> logger;
 
-        public AccountsController(IServiceManager serviceManager, IMapper mapper)
+        public AccountsController(IServiceManager serviceManager, IMapper mapper, ILogger<AccountsController> logger)
         {
             this.serviceManager = serviceManager;
             this.mapper = mapper;
+            this.logger = logger;
         }
 
         // POST api/v1/Accounts/google
@@ -35,51 +39,75 @@ namespace ASPWebApi.Controllers
             CancellationToken cancellationToken)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Token))
+            {
+                logger.LogWarning("GoogleSignIn: Missing token in request.");
                 return BadRequest("Missing token");
+            }
 
-            // Verify token with Google
-            using var http = new HttpClient();
-            var verifyUrl = $"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(request.Token)}";
-            HttpResponseMessage verifyResponse;
             try
             {
-                verifyResponse = await http.GetAsync(verifyUrl, cancellationToken);
+                // Verify token with Google
+                using var http = new HttpClient();
+                var verifyUrl = $"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(request.Token)}";
+                var verifyResponse = await http.GetAsync(verifyUrl, cancellationToken);
+
+                if (!verifyResponse.IsSuccessStatusCode)
+                {
+                    logger.LogWarning("GoogleSignIn: Token verification failed with status code {StatusCode}.", verifyResponse.StatusCode);
+                    return Unauthorized("Invalid token");
+                }
+
+                var payload = await verifyResponse.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(payload);
+
+                if (!doc.RootElement.TryGetProperty("email", out var emailEl))
+                {
+                    logger.LogWarning("GoogleSignIn: Token did not contain email.");
+                    return BadRequest("Token did not contain email");
+                }
+
+                var email = emailEl.GetString();
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    logger.LogWarning("GoogleSignIn: Email not present in token.");
+                    return BadRequest("Email not present in token");
+                }
+
+                // Look up existing account
+                var existing = await serviceManager.AccountsService.GetAccountByEmail(email, cancellationToken);
+                if (existing != null)
+                {
+                    logger.LogInformation("GoogleSignIn: Existing account found for email {Email}.", email);
+                    return Ok(mapper.Map<AccountModel>(existing));
+                }
+
+                // Create a new account for this Google user. Password is a random GUID placeholder.
+                var newModel = new AccountModel
+                {
+                    Email = email,
+                    Password = Guid.NewGuid().ToString()
+                };
+
+                var created = await serviceManager.AccountsService.CreateAccount(
+                    mapper.Map<Services.Abstract.Dto.AccountDto>(newModel), cancellationToken);
+
+                logger.LogInformation("GoogleSignIn: New account created for email {Email}.", email);
+
+                return CreatedAtAction(
+                    nameof(GetAccount),
+                    new { id = created.Id },
+                    mapper.Map<AccountModel>(created));
             }
-            catch (Exception)
+            catch (HttpRequestException ex)
             {
-                return Unauthorized();
+                logger.LogError(ex, "GoogleSignIn: HTTP request failed.");
+                return StatusCode(500, "An error occurred while verifying the token.");
             }
-
-            if (!verifyResponse.IsSuccessStatusCode)
-                return Unauthorized();
-
-            var payload = await verifyResponse.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = JsonDocument.Parse(payload);
-            if (!doc.RootElement.TryGetProperty("email", out var emailEl))
-                return BadRequest("Token did not contain email");
-
-            var email = emailEl.GetString();
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest("Email not present in token");
-
-            // Look up existing account
-            var existing = await serviceManager.AccountsService.GetAccountByEmail(email, cancellationToken);
-            if (existing != null)
-                return Ok(mapper.Map<AccountModel>(existing));
-
-            // Create a new account for this Google user. Password is a random GUID placeholder.
-            var newModel = new AccountModel
+            catch (Exception ex)
             {
-                Email = email,
-                Password = Guid.NewGuid().ToString()
-            };
-
-            var created = await serviceManager.AccountsService.CreateAccount(mapper.Map<Services.Abstract.Dto.AccountDto>(newModel), cancellationToken);
-
-            return CreatedAtAction(
-                nameof(GetAccount),
-                new { id = created.Id },
-                mapper.Map<AccountModel>(created));
+                logger.LogError(ex, "GoogleSignIn: An unexpected error occurred.");
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
 
         public class GoogleTokenRequest
@@ -157,13 +185,13 @@ namespace ASPWebApi.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAccount(
-            string email,   
+            string email,
             CancellationToken cancellationToken)
         {
             var removed = await serviceManager
                 .AccountsService
                 .RemoveAccountByEmail(email, cancellationToken);
-                                        
+
             if (removed != null)
                 return NotFound();
 

@@ -24,6 +24,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Logging.ClearProviders(); 
+builder.Logging.AddConsole();
+
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -81,4 +84,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add logging
+app.Logger.LogInformation("Application starting");
+
 app.Run();
