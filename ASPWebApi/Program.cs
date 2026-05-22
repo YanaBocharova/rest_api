@@ -43,7 +43,21 @@ builder.Services.AddSingleton(new MapperConfiguration(mc =>
 
 // EF Core
 builder.Services.AddDbContext<DatabaseContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure();
+        });
+
+    // Enable detailed EF logs
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
+
+    // Log SQL + connection errors to console
+    options.LogTo(Console.WriteLine, LogLevel.Information);
+});
 
 // Services
 builder.Services.AddScoped<IServiceManager, ServiceManager>();
