@@ -13,14 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Controllers
 builder.Services.AddControllers();
 
-// Enable CORS to allow requests from any origin
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()   // Allow any domain
-              .AllowAnyHeader()   // Allow any headers
-              .AllowAnyMethod();  // Allow GET, POST, PUT, DELETE, etc.
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
@@ -77,9 +74,8 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-
 var app = builder.Build();
-
+app.UseCors("AllowAll");
 // Swagger UI in Development
 if (app.Environment.IsDevelopment())
 {
@@ -91,15 +87,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("AllowAll");
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 // Add logging
 app.Logger.LogInformation("Application starting");
-
 app.Run();
