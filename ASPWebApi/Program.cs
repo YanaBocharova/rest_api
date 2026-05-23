@@ -10,9 +10,11 @@ using Services.AutoMaper;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
-builder.Services.AddControllers();
+// 1. Настройка логирования
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
+// 2. Настройка CORS (Политика должна быть максимально открытой для тестов)
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {
         policy.AllowAnyOrigin()
@@ -21,24 +23,25 @@ builder.Services.AddCors(options => {
     });
 });
 
-builder.Logging.ClearProviders(); 
-builder.Logging.AddConsole();
+// 3. Контроллеры с настройкой JSON (чтобы не было 500 на пустых объектах)
+builder.Services.AddControllers()
+    .AddJsonOptions(options => {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "PresentationApi", Version = "v1" });
 });
 
-// AutoMapper
+// 5. AutoMapper
 builder.Services.AddSingleton(new MapperConfiguration(mc =>
 {
     mc.AddProfile(new MappingProfile());
     mc.AddProfile(new AccountProfile());
 }).CreateMapper());
 
-// EF Core
 builder.Services.AddDbContext<DatabaseContext>(options =>
 {
     options.UseNpgsql(
@@ -48,19 +51,14 @@ builder.Services.AddDbContext<DatabaseContext>(options =>
             npgsqlOptions.EnableRetryOnFailure();
         });
 
-    // Enable detailed EF logs
     options.EnableDetailedErrors();
     options.EnableSensitiveDataLogging();
-
-    // Log SQL + connection errors to console
     options.LogTo(Console.WriteLine, LogLevel.Information);
 });
 
-// Services
 builder.Services.AddScoped<IServiceManager, ServiceManager>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// ДО builder.Build()
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = "Cookies";
@@ -69,29 +67,37 @@ builder.Services.AddAuthentication(options =>
 .AddCookie()
 .AddGoogle(options =>
 {
-    options.ClientId = "YOUR_CLIENT_ID";
-    options.ClientSecret = "YOUR_SECRET";
+    // ВАЖНО: Проверьте эти данные в Google Console!
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "YOUR_CLIENT_ID";
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "YOUR_SECRET";
 });
 
-
 var app = builder.Build();
-app.UseCors("AllowAll");
-// Swagger UI in Development
+
+// --- ПОРЯДОК MIDDLEWARE КРИТИЧЕН ---
+
+// Всегда первым в разработке, чтобы видеть детали ошибки 500
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PresentationApi v1");
-        c.RoutePrefix = "swagger";
-    });
+    app.UseDeveloperExceptionPage();
 }
 
-//app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "PresentationApi v1");
+    c.RoutePrefix = "swagger";
+});
+
+// app.UseHttpsRedirection(); // Закомментируйте, если фронт на http, а бэк на https (причина CORS)
+
+app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Add logging
 app.Logger.LogInformation("Application starting");
 app.Run();
