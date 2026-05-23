@@ -64,19 +64,11 @@ builder.Services.AddAuthentication(options =>
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
 })
-.AddCookie()
-.AddGoogle(options =>
-{
-    // ВАЖНО: Проверьте эти данные в Google Console!
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "YOUR_CLIENT_ID";
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "YOUR_SECRET";
-});
+.AddCookie();
 
 var app = builder.Build();
 
-// --- ПОРЯДОК MIDDLEWARE КРИТИЧЕН ---
 
-// Всегда первым в разработке, чтобы видеть детали ошибки 500
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -91,8 +83,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-// app.UseHttpsRedirection(); // Закомментируйте, если фронт на http, а бэк на https (причина CORS)
-
+app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();
