@@ -12,8 +12,7 @@ namespace Persistence
         public DatabaseContext(DbContextOptions<DatabaseContext> options)
             : base(options)
         {
-            //OR Option 2(recommended): use migrations instead
-             Database.Migrate();
+            Database.Migrate();
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
