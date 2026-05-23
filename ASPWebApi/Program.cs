@@ -14,12 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-// 2. Настройка CORS (Политика должна быть максимально открытой для тестов)
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("https://reactapp-plum-sigma.vercel.app") 
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); 
     });
 });
 
