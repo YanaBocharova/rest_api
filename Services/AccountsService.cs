@@ -3,19 +3,20 @@ using Domain.Entity;
 using Domain.Interfaces;
 using Services.Abstract.Dto;
 using Services.Abstract.Interfaces;
-using System.Security.Principal;
 
 namespace Services
 {
     internal class AccountsService : IAccountsService
     {
-        IUnitOfWork unitOfWork;
-        IMapper mapper;
+        private readonly IUnitOfWork unitOfWork;
+        private readonly IMapper mapper;
+
         public AccountsService(IUnitOfWork uow, IMapper map) 
         {
             unitOfWork = uow;
             mapper = map;
         }
+
         public async Task<IEnumerable<AccountDto>> GetAllAccounts(CancellationToken token)
         {
             var accounts = await unitOfWork.AccountsRepository.GetAllAsync(token);
@@ -43,33 +44,31 @@ namespace Services
         public async Task<AccountDto> RemoveAccountByEmail(string email, CancellationToken token)
         {
             await unitOfWork.AccountsRepository.RemoveAsync(email, token);
-            unitOfWork.SaveChanges();
-            return GetAccountByEmail(email, token).Result;
+            await unitOfWork.SaveChangesAsync(token);
+            return await GetAccountByEmail(email, token);
         }
 
         public async Task<AccountDto> RemoveAccountById(int id, CancellationToken token)
         {
             await unitOfWork.AccountsRepository.RemoveAsync(id, token);
-            unitOfWork.SaveChanges();
-
-            return GetAccountById(id, token).Result;
+            await unitOfWork.SaveChangesAsync(token);
+            return await GetAccountById(id, token);
         }
 
         public async Task<AccountDto> UpdateAccount(AccountDto acc, CancellationToken token)
         {
             var accountToUpdate = mapper.Map<Account>(acc);
             await unitOfWork.AccountsRepository.UpdateAsync(accountToUpdate, token);
-            unitOfWork.SaveChanges();
-            return GetAccountByEmail(accountToUpdate.Email, token).Result;
+            await unitOfWork.SaveChangesAsync(token);
+            return await GetAccountByEmail(accountToUpdate.Email, token);
         }
 
         public async Task<AccountDto> CreateAccount(AccountDto acc, CancellationToken token)
         {
             var account = mapper.Map<Account>(acc);
             await unitOfWork.AccountsRepository.CreateAsync(account, token);
-            unitOfWork.SaveChanges();
-
-            return GetAccountByEmail(account.Email, token).Result;
+            await unitOfWork.SaveChangesAsync(token);
+            return await GetAccountByEmail(account.Email, token);
         }
     }
 }

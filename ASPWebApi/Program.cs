@@ -1,3 +1,4 @@
+using ASPWebApi.ExceptionHandlers;
 using ASPWebApi.Profiles;
 using AutoMapper;
 using Domain.Interfaces;
@@ -10,22 +11,23 @@ using Services.AutoMaper;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Настройка логирования
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", policy => {
-        policy.WithOrigins("https://reactapp-plum-sigma.vercel.app") 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.WithOrigins("https://reactapp-plum-sigma.vercel.app")
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials(); 
+              .AllowCredentials();
     });
 });
 
-// 3. Контроллеры с настройкой JSON (чтобы не было 500 на пустых объектах)
 builder.Services.AddControllers()
-    .AddJsonOptions(options => {
+    .AddJsonOptions(options =>
+    {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
@@ -35,7 +37,7 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "PresentationApi", Version = "v1" });
 });
 
-// 5. AutoMapper
+// AutoMapper
 builder.Services.AddSingleton(new MapperConfiguration(mc =>
 {
     mc.AddProfile(new MappingProfile());
@@ -66,16 +68,12 @@ builder.Services.AddAuthentication(options =>
 })
 .AddCookie();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
-
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-
+app.UseExceptionHandler();
 app.UseCors("AllowAll");
-
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -85,10 +83,9 @@ app.UseSwaggerUI(c =>
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
 app.Logger.LogInformation("Application starting");
+
 app.Run();

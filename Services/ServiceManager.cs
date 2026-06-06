@@ -7,9 +7,9 @@ namespace Services
 {
     public class ServiceManager : IServiceManager
     {
-        public IAccountsService AccountsService => _accounntsService.Value;
+        public IAccountsService AccountsService => _accountsService.Value;
 
-        private readonly Lazy<IAccountsService> _accounntsService;
+        private readonly Lazy<IAccountsService> _accountsService;
 
         public ServiceManager(IUnitOfWork unitOfWork, IMapper mapper)
         {
@@ -20,7 +20,7 @@ namespace Services
 
             mapper = mappingConfig.CreateMapper();
 
-            _accounntsService = new Lazy<IAccountsService>(() => new AccountsService(unitOfWork, mapper));
+            _accountsService = new Lazy<IAccountsService>(() => new AccountsService(unitOfWork, mapper));
         }
     }
 }

@@ -6,5 +6,7 @@ namespace Domain.Interfaces
     {
         IRepository<Account> AccountsRepository { get; }
         void SaveChanges();
+
+        Task SaveChangesAsync(CancellationToken token);
     }
 }

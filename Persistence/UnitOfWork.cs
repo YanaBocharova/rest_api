@@ -16,6 +16,7 @@ namespace Persistence
             db = context;
         }
 
+        public async Task SaveChangesAsync(CancellationToken token) => await db.SaveChangesAsync(token);
         public void SaveChanges() => db.SaveChanges();
     }
 }
