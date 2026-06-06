@@ -7,7 +7,7 @@ using Services.Abstract.Interfaces;
 
 namespace Services
 {
-    internal class AccountsService : IAccountsService
+    public class AccountsService : IAccountsService
     {
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
