@@ -134,7 +134,7 @@ namespace WebApiTests.ServicesTests
             // Assert
             mockRepo.Verify(r => r.RemoveAsync("x@y.com", It.IsAny<CancellationToken>()), Times.Once);
             mockUow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-            Assert.IsNull(result);
+            Assert.IsTrue(result);
         }
     }
 }
