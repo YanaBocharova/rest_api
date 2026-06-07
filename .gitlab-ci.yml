@@ -18,6 +18,7 @@ include:
 stages:
   - restore
   - build
+  - audit
   - test
   - sast
   - dependency_scanning
@@ -52,7 +53,22 @@ dependency_scanning:
   stage: dependency_scanning
   tags:
     - windows
-
+    
+audit:
+  stage: audit
+  tags:
+    - windows
+  script:
+    - echo "Auditing NuGet packages for vulnerabilities..."
+    - dotnet list ASPWebApi.slnx package --vulnerable 2>&1 | tee vulnerability-report.txt
+    - |
+      if grep -q "has the following vulnerable packages" vulnerability-report.txt; then
+        echo "VULNERABILITIES FOUND!"
+        cat vulnerability-report.txt
+        exit 1
+      fi
+    - echo "No vulnerabilities found."
+    
 sast:
   stage: sast
   tags:
