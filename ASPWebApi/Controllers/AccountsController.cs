@@ -11,6 +11,11 @@ using Microsoft.Extensions.Logging;
 
 namespace ASPWebApi.Controllers
 {
+    public class GoogleTokenRequest
+    {
+        public string? Token { get; set; }
+    }
+
     [ApiController]
     [Route("api/v1/[controller]")]
     public class AccountsController : ControllerBase
@@ -29,7 +34,7 @@ namespace ASPWebApi.Controllers
         // POST api/v1/Accounts/google
         // Accepts: { token: string }
         // Verifies the Google ID token and returns or creates the corresponding account.
-        [HttpPost("google", Name = "GoogleSignIn")]
+        [HttpPost("Google", Name = "GoogleSignIn")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -110,12 +115,7 @@ namespace ASPWebApi.Controllers
             }
         }
 
-        public class GoogleTokenRequest
-        {
-            public string Token { get; set; }
-        }
-
-        [HttpGet(Name = "GetAllAccounts")]
+        [HttpGet("GetAllAccounts", Name = "GetAllAccounts")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<AccountModel>>> GetAllAccounts(
             CancellationToken cancellationToken)
@@ -144,10 +144,10 @@ namespace ASPWebApi.Controllers
             return Ok(mapper.Map<AccountModel>(account));
         }
 
-        [HttpPost("signin", Name = "GetAccountByEmailAndPassword")]
+        [HttpPost("Signin", Name = "GetAccountByEmailAndPassword")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<AccountModel>> GetAccountSingIn(
+        public async Task<ActionResult<AccountModel>> GetAccountSignIn(
             [FromBody] AccountModel newAccount,
             CancellationToken cancellationToken)
         {
@@ -162,7 +162,7 @@ namespace ASPWebApi.Controllers
         }
 
 
-        [HttpPost(Name = "CreateAccount")]
+        [HttpPost("CreateAccount", Name = "CreateAccount")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateAccount(
@@ -181,21 +181,20 @@ namespace ASPWebApi.Controllers
                 mapper.Map<AccountModel>(created));
         }
 
-        [HttpDelete("{email}", Name = "DeleteAccountByEmail")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpDelete("Delete", Name = "DeleteAccountByEmail")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAccount(
-            string email,
+            [FromQuery] string email,
             CancellationToken cancellationToken)
         {
-            var removed = await serviceManager
-                .AccountsService
-                .RemoveAccountByEmail(email, cancellationToken);
+            bool removed = await serviceManager.AccountsService.RemoveAccountByEmail(email, cancellationToken);
 
-            if (removed != null)
+            if (!removed)
                 return NotFound();
 
-            return NoContent();
+
+            return Ok(new { message = "Account removed successfully" });
         }
     }
 }

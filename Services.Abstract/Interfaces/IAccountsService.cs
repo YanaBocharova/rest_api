@@ -11,6 +11,6 @@ namespace Services.Abstract.Interfaces
         Task<AccountDto> RemoveAccountById(int id, CancellationToken cancellationToken);
         Task<AccountDto> GetAccountByEmail(string email, CancellationToken cancellationToken);
         Task<AccountDto> GetAccountByEmail(string email, string password, CancellationToken cancellationToken);
-        Task<AccountDto> RemoveAccountByEmail(string email, CancellationToken cancellationToken);
+        Task<bool> RemoveAccountByEmail(string email, CancellationToken cancellationToken);
     }
 }

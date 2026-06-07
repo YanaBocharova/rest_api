@@ -13,13 +13,6 @@ namespace Services
 
         public ServiceManager(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            var mappingConfig = new MapperConfiguration(mc =>
-            {
-                mc.AddProfile(new MappingProfile());
-            });
-
-            mapper = mappingConfig.CreateMapper();
-
             _accountsService = new Lazy<IAccountsService>(() => new AccountsService(unitOfWork, mapper));
         }
     }

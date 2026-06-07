@@ -56,11 +56,11 @@ namespace Services
             return mapper.Map<AccountDto>(srch);
         }
 
-        public async Task<AccountDto> RemoveAccountByEmail(string email, CancellationToken token)
+        public async Task<bool> RemoveAccountByEmail(string email, CancellationToken token)
         {
             await unitOfWork.AccountsRepository.RemoveAsync(email, token);
             await unitOfWork.SaveChangesAsync(token);
-            return await GetAccountByEmail(email, token);
+            return await GetAccountByEmail(email, token) == null;
         }
 
         public async Task<AccountDto> RemoveAccountById(int id, CancellationToken token)
