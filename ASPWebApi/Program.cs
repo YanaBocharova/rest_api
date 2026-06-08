@@ -38,11 +38,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // AutoMapper
-builder.Services.AddSingleton(new MapperConfiguration(mc =>
+builder.Services.AddSingleton<IMapper>(sp =>
 {
-    mc.AddProfile(new MappingProfile());
-    mc.AddProfile(new AccountProfile());
-}).CreateMapper());
+    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+    var config = new MapperConfiguration(cfg =>
+    {
+        cfg.AddProfile<MappingProfile>();
+        cfg.AddProfile<AccountProfile>();
+    }, loggerFactory);
+
+    return config.CreateMapper();
+});
 
 builder.Services.AddDbContext<DatabaseContext>(options =>
 {

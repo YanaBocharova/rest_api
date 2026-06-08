@@ -4,7 +4,6 @@ variables:
   NUGET_PACKAGES: "$CI_PROJECT_DIR/.nuget/packages"
 
 cache:
-  key: "$CI_COMMIT_REF_SLUG"    # one cache per branch — or just:
   key: nuget-cache              # shared across ALL branches (remove protected from settings)
   paths:
     - .nuget/packages
@@ -53,22 +52,19 @@ dependency_scanning:
   stage: dependency_scanning
   tags:
     - windows
-    
-audit:
+
+
+audit_and_test_job:
   stage: audit
   tags:
     - windows
   script:
-    - echo "Auditing NuGet packages for vulnerabilities..."
-    - dotnet list ASPWebApi.slnx package --vulnerable 2>&1 | PowerShell vulnerability-report.txt
-    - |
-      if grep -q "has the following vulnerable packages" vulnerability-report.txt; then
-        echo "VULNERABILITIES FOUND!"
-        cat vulnerability-report.txt
-        exit 1
-      fi
-    - echo "No vulnerabilities found."
-    
+  - dotnet test WebApiTests/WebApiTests.csproj --configuration Release --no-restore --logger "trx"
+  artifacts:
+    paths:
+    - "**/*.trx"
+    expire_in: 1 week
+
 sast:
   stage: sast
   tags:
