@@ -53,13 +53,11 @@ dependency_scanning:
   tags:
     - windows
 
-
 audit_and_test_job:
   stage: audit
-  tags:
-    - windows
   script:
-  - dotnet test WebApiTests/WebApiTests.csproj --configuration Release --no-restore --logger "trx"
+    - dotnet restore
+    - dotnet test WebApiTests/WebApiTests.csproj --configuration Release --no-restore --logger "trx;LogFileName=test-results.trx"
   artifacts:
     paths:
     - "**/*.trx"
